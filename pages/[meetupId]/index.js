@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react'
+import { MongoClient } from 'mongodb'
 
 const index = () => {
   return (
@@ -12,20 +13,20 @@ const index = () => {
 }
 
 export async function getStaticPaths(){
+
+  const client = await MongoClient.connect('mongodb+srv://farhansyed0007:farhan12112@cluster0.btjikoo.mongodb.net/meetups?retryWrites=true&w=majority');
+  
+  const db = client.db();
+
+  const meetupsCollection = db.collection('meetups');
+
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray()
+
+  client.close();
+
   return{
     fallback: true,
-    paths: [
-      { 
-        params: {
-        meetupId: 'm1',
-        }, 
-      },
-      { 
-        params: {
-        meetupId: 'm2',
-        }, 
-      },
-    ]
+    paths: meetups.map(meetup => ({ params: { meetupId: meetup._id.toString() } }))
   }
 }
 
@@ -33,17 +34,19 @@ export async function getStaticProps(context) {
   
   const meetupId = context.params.meetupId;
 
-  console.log(meetupId);
+  const client = await MongoClient.connect('mongodb+srv://farhansyed0007:farhan12112@cluster0.btjikoo.mongodb.net/meetups?retryWrites=true&w=majority');
+  
+  const db = client.db();
+
+  const meetupsCollection = db.collection('meetups');
+
+  const selectedMeetup = await meetupsCollection.findOne({ _id: meetupId });
+
+  client.close();
 
   return{
     props: {
-      meetupData: {
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Stadtbild_M%C3%BCnchen.jpg/800px-Stadtbild_M%C3%BCnchen.jpg?20130611211153',
-        id: meetupId,
-        title: 'First Meet',
-        address: 'some random street, some landmark, random appartment, some floor, some flat number',
-        description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit.'
-      } 
+      meetupData: selectedMeetup, 
     }
   }
 }
